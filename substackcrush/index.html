@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Substack Crush Revealer</title>
+<meta property="og:title" content="Substack Crush Revealer">
+<meta property="og:description" content="Answer 5 deep questions. The algorithm knows your heart.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a0f;
+  --card:#141420;
+  --accent:#ff6b35;
+  --accent2:#ff3366;
+  --text:#e8e6e3;
+  --muted:#7a7586;
+}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:'Syne',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+#app{
+  position:relative;
+  width:100vw;height:100vh;
+  overflow:hidden;
+}
+
+/* FLOATING PHOTOS */
+.floating-photo{
+  position:absolute;
+  width:72px;height:72px;
+  border-radius:14px;
+  overflow:hidden;
+  box-shadow:0 4px 24px rgba(0,0,0,.5);
+  opacity:0;
+  animation:floatIn .8s ease forwards, bobbing 6s ease-in-out infinite;
+  border:2px solid rgba(255,255,255,.08);
+  pointer-events:none;
+  z-index:1;
+}
+.floating-photo img{width:100%;height:100%;object-fit:cover}
+@keyframes floatIn{to{opacity:.5}}
+@keyframes bobbing{
+  0%,100%{transform:translateY(0) rotate(var(--rot,0deg))}
+  50%{transform:translateY(var(--bob,-12px)) rotate(calc(var(--rot,0deg) + 2deg))}
+}
+
+/* SCREENS */
+.screen{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:24px;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .5s ease, transform .5s ease;
+  transform:translateY(20px);
+  z-index:10;
+}
+.screen.active{
+  opacity:1;pointer-events:auto;transform:translateY(0);
+}
+
+/* HOME */
+#home .logo{
+  font-weight:800;
+  font-size:clamp(2rem,7vw,3.8rem);
+  text-align:center;
+  line-height:1.1;
+  margin-bottom:8px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+#home .sub{
+  font-family:'Space Mono',monospace;
+  font-size:clamp(.7rem,2.5vw,.9rem);
+  color:var(--muted);
+  text-align:center;
+  margin-bottom:32px;
+  max-width:400px;
+  line-height:1.5;
+}
+
+/* BUTTONS */
+.btn{
+  font-family:'Syne',sans-serif;
+  font-weight:700;
+  font-size:1.05rem;
+  padding:16px 40px;
+  border:none;
+  border-radius:60px;
+  cursor:pointer;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;
+  letter-spacing:.5px;
+  transition:transform .2s,box-shadow .2s;
+  box-shadow:0 4px 24px rgba(255,107,53,.3);
+}
+.btn:hover{transform:scale(1.04);box-shadow:0 6px 32px rgba(255,107,53,.45)}
+.btn:active{transform:scale(.98)}
+
+/* QUESTION SCREENS */
+.question-num{
+  font-family:'Space Mono',monospace;
+  font-size:.75rem;
+  color:var(--accent);
+  letter-spacing:3px;
+  text-transform:uppercase;
+  margin-bottom:12px;
+}
+.question-text{
+  font-size:clamp(1.15rem,4vw,1.6rem);
+  font-weight:700;
+  text-align:center;
+  max-width:520px;
+  line-height:1.35;
+  margin-bottom:32px;
+}
+.options{
+  display:flex;flex-direction:column;gap:12px;
+  width:100%;max-width:420px;
+}
+.option-btn{
+  font-family:'Syne',sans-serif;
+  font-weight:600;
+  font-size:.95rem;
+  padding:16px 20px;
+  border:1.5px solid rgba(255,255,255,.1);
+  border-radius:14px;
+  background:var(--card);
+  color:var(--text);
+  cursor:pointer;
+  text-align:left;
+  transition:all .2s;
+}
+.option-btn:hover{
+  border-color:var(--accent);
+  background:rgba(255,107,53,.08);
+  transform:translateX(4px);
+}
+
+/* PROGRESS BAR */
+.progress-track{
+  position:fixed;top:0;left:0;
+  width:100%;height:3px;
+  background:rgba(255,255,255,.05);
+  z-index:100;
+}
+.progress-fill{
+  height:100%;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  transition:width .4s ease;
+  width:0%;
+}
+
+/* CALCULATING SCREEN */
+#calculating{z-index:20}
+.calc-container{
+  width:100%;max-width:600px;
+  text-align:center;
+}
+.calc-title{
+  font-weight:800;
+  font-size:clamp(1.1rem,3.5vw,1.4rem);
+  margin-bottom:24px;
+  color:var(--accent);
+}
+.matrix-rain{
+  font-family:'Space Mono',monospace;
+  font-size:clamp(.55rem,1.8vw,.72rem);
+  color:var(--accent);
+  opacity:.7;
+  line-height:1.6;
+  max-height:320px;
+  overflow:hidden;
+  text-align:left;
+  background:rgba(0,0,0,.4);
+  border:1px solid rgba(255,107,53,.15);
+  border-radius:12px;
+  padding:16px;
+  margin-bottom:24px;
+  white-space:pre-wrap;
+  word-break:break-all;
+}
+.calc-status{
+  font-family:'Space Mono',monospace;
+  font-size:.8rem;
+  color:var(--muted);
+  margin-top:12px;
+}
+.calc-bar-track{
+  width:100%;height:6px;
+  background:rgba(255,255,255,.06);
+  border-radius:3px;
+  margin-top:16px;
+  overflow:hidden;
+}
+.calc-bar-fill{
+  height:100%;width:0%;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  border-radius:3px;
+  transition:width .3s;
+}
+
+/* REVEAL SCREEN */
+#reveal{z-index:20}
+.reveal-container{text-align:center}
+.reveal-label{
+  font-family:'Space Mono',monospace;
+  font-size:.75rem;
+  color:var(--accent);
+  letter-spacing:3px;
+  text-transform:uppercase;
+  margin-bottom:8px;
+}
+.reveal-title{
+  font-weight:800;
+  font-size:clamp(1.3rem,5vw,2.2rem);
+  margin-bottom:20px;
+}
+.reveal-photo{
+  width:180px;height:180px;
+  border-radius:50%;
+  overflow:hidden;
+  margin:0 auto 24px;
+  border:3px solid var(--accent);
+  box-shadow:0 0 60px rgba(255,107,53,.3);
+  animation:revealPulse 2s ease-in-out infinite;
+}
+.reveal-photo img{width:100%;height:100%;object-fit:cover}
+@keyframes revealPulse{
+  0%,100%{box-shadow:0 0 40px rgba(255,107,53,.25)}
+  50%{box-shadow:0 0 80px rgba(255,51,102,.4)}
+}
+.reveal-name{
+  font-weight:800;
+  font-size:clamp(1.8rem,7vw,3rem);
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  margin-bottom:6px;
+}
+.reveal-handle{
+  font-family:'Space Mono',monospace;
+  font-size:.85rem;
+  color:var(--muted);
+  margin-bottom:32px;
+}
+.share-btn{
+  font-family:'Syne',sans-serif;
+  font-weight:700;
+  font-size:1.05rem;
+  padding:16px 36px;
+  border:none;
+  border-radius:60px;
+  cursor:pointer;
+  background:linear-gradient(135deg,#ff6b35,#ff3366);
+  color:#fff;
+  box-shadow:0 4px 24px rgba(255,107,53,.3);
+  transition:transform .2s,box-shadow .2s;
+  display:inline-flex;align-items:center;gap:8px;
+  text-decoration:none;
+}
+.share-btn:hover{transform:scale(1.04);box-shadow:0 6px 32px rgba(255,107,53,.45)}
+.share-btn svg{width:20px;height:20px;fill:#fff}
+.retake{
+  display:block;
+  margin-top:16px;
+  font-family:'Space Mono',monospace;
+  font-size:.75rem;
+  color:var(--muted);
+  background:none;border:none;
+  cursor:pointer;
+  text-decoration:underline;
+  text-underline-offset:3px;
+}
+.retake:hover{color:var(--text)}
+
+/* CONFETTI */
+.confetti-piece{
+  position:fixed;
+  width:8px;height:8px;
+  z-index:50;
+  pointer-events:none;
+  border-radius:2px;
+  animation:confettiFall linear forwards;
+}
+@keyframes confettiFall{
+  0%{opacity:1;transform:translateY(0) rotate(0deg)}
+  100%{opacity:0;transform:translateY(100vh) rotate(720deg)}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div id="photoField"></div>
+
+  <!-- HOME -->
+  <div class="screen active" id="home">
+    <div class="logo">Substack Crush<br>Revealer</div>
+    <p class="sub">Answer 5 questions about consciousness, the universe, and your deepest preferences. Our proprietary algorithm will calculate your Substack soulmate.</p>
+    <button class="btn" onclick="startQuiz()">Reveal My Crush &rarr;</button>
+  </div>
+
+  <!-- QUESTIONS (built by JS) -->
+  <div class="screen" id="q1"></div>
+  <div class="screen" id="q2"></div>
+  <div class="screen" id="q3"></div>
+  <div class="screen" id="q4"></div>
+  <div class="screen" id="q5"></div>
+
+  <!-- CALCULATING -->
+  <div class="screen" id="calculating">
+    <div class="calc-container">
+      <div class="calc-title">&#x27D0; ANALYZING METAPHYSICAL SIGNATURE &#x27D0;</div>
+      <div class="matrix-rain" id="matrixRain"></div>
+      <div class="calc-bar-track"><div class="calc-bar-fill" id="calcBar"></div></div>
+      <div class="calc-status" id="calcStatus">Initializing neural resonance field...</div>
+    </div>
+  </div>
+
+  <!-- REVEAL -->
+  <div class="screen" id="reveal">
+    <div class="reveal-container">
+      <div class="reveal-label">The algorithm has spoken</div>
+      <div class="reveal-title">Your Substack Crush is...</div>
+      <div class="reveal-photo"><img src="img/paul_staples.png" alt="Paul Staples"></div>
+      <div class="reveal-name">Paul Staples</div>
+      <div class="reveal-handle">@paulstaples</div>
+      <a class="share-btn" id="shareBtn" href="#">
+        <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+        Share on Substack
+      </a>
+      <button class="retake" onclick="resetQuiz()">take it again (it won't change)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const FLOATING_IMAGES = [
+  "img/0ed41009-c1f9-4df4-9d3a-b2594c80c6d9_2237x2237.jpg",
+  "img/8f4f88de-0572-4426-a717-21490fcd9a59_1166x1168.jpg",
+  "img/39b566c7-b024-48af-99e5-3e84f5d2f8a0_1080x1080.jpg",
+  "img/46d05a58-6aa7-4896-bd79-5972793b5d4f_1179x1179.jpg",
+  "img/74ccac42-540d-48aa-8d78-e82e6d2aae77_544x526.jpg",
+  "img/148fa54b-8c7d-406c-a7bd-a7a943bb4297_1080x1080.jpg",
+  "img/427d98e6-571d-4112-b66d-926d88baa3c7_1119x1123.jpg",
+  "img/a054f23a-83b9-43bb-91fd-1f3a875be1fe_462x462.jpg",
+  "img/a128e670-9ce7-4619-860e-7da7b31069ed_836x836.jpg",
+  "img/a78387cc-41b5-4111-941b-9ed53b445368_539x540.jpg",
+  "img/b82249be-bdc7-44cd-8d10-c283af9b96b5_400x400.jpg",
+  "img/d5d36e67-8f27-4350-8fdc-15f1202ceea6_826x826.jpg",
+  "img/paul_staples.png"
+];
+
+const questions = [
+  {
+    q: "If the universe is a simulation, what's the most likely reason it was created?",
+    opts: [
+      "An art project by a bored god",
+      "A training environment for souls",
+      "Someone's PhD thesis got out of hand",
+      "To see what happens when you give primates anxiety"
+    ]
+  },
+  {
+    q: "You can only keep one sense for eternity. Which do you choose?",
+    opts: [
+      "Touch — connection is everything",
+      "Sight — beauty sustains me",
+      "Hearing — silence would be true death",
+      "Taste — I refuse to live without garlic"
+    ]
+  },
+  {
+    q: "What's the most honest thing you could put on your tombstone?",
+    opts: [
+      "\"Finally stopped refreshing their feed\"",
+      "\"Was right about most things, actually\"",
+      "\"Loved harder than they let on\"",
+      "\"Should have gone outside more\""
+    ]
+  },
+  {
+    q: "Free will is an illusion. How does that make you feel?",
+    opts: [
+      "Relieved — nothing is my fault",
+      "Furious — but I was predetermined to feel that",
+      "Indifferent — the coffee still tastes good either way",
+      "Aroused, intellectually"
+    ]
+  },
+  {
+    q: "What's the highest form of intimacy?",
+    opts: [
+      "Comfortable silence in the same room",
+      "Someone remembering a small thing you said months ago",
+      "Sharing a draft before it's ready",
+      "Letting someone see your screen time report"
+    ]
+  }
+];
+
+let currentScreen = 'home';
+let questionIndex = 0;
+
+function initPhotos() {
+  const field = document.getElementById('photoField');
+  field.innerHTML = '';
+  FLOATING_IMAGES.forEach((src, i) => {
+    const div = document.createElement('div');
+    div.className = 'floating-photo';
+    const size = 56 + Math.random() * 36;
+    div.style.cssText = `
+      width:${size}px;height:${size}px;
+      left:${5 + Math.random() * 85}%;
+      top:${5 + Math.random() * 85}%;
+      animation-delay:${Math.random()*2}s,${Math.random()*2}s;
+      --bob:${-8 - Math.random()*18}px;
+      --rot:${-6 + Math.random()*12}deg;
+      animation-duration:.8s,${5+Math.random()*4}s;
+    `;
+    div.innerHTML = '<img src="'+src+'" alt="" loading="lazy">';
+    field.appendChild(div);
+  });
+}
+
+function renderQuestion(idx) {
+  const el = document.getElementById('q'+(idx+1));
+  const q = questions[idx];
+  el.innerHTML =
+    '<div class="question-num">Question '+(idx+1)+' of 5</div>'+
+    '<div class="question-text">'+q.q+'</div>'+
+    '<div class="options">'+
+    q.opts.map(function(o){return '<button class="option-btn" onclick="answer('+idx+')">'+o+'</button>'}).join('')+
+    '</div>';
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
+  document.getElementById(id).classList.add('active');
+  currentScreen = id;
+}
+
+function updateProgress(step) {
+  document.getElementById('progressFill').style.width = (step/5*100)+'%';
+}
+
+function startQuiz() {
+  questionIndex = 0;
+  questions.forEach(function(_,i){renderQuestion(i)});
+  updateProgress(0);
+  showScreen('q1');
+}
+
+function answer(qIdx) {
+  questionIndex = qIdx + 1;
+  updateProgress(questionIndex);
+  if (questionIndex < 5) {
+    showScreen('q'+(questionIndex+1));
+  } else {
+    startCalculating();
+  }
+}
+
+function startCalculating() {
+  showScreen('calculating');
+  var rain = document.getElementById('matrixRain');
+  var bar = document.getElementById('calcBar');
+  var status = document.getElementById('calcStatus');
+  rain.textContent = '';
+  bar.style.width = '0%';
+
+  var fakeLines = [
+    "LOADING NEURAL SUBSTRATE v4.2.1...",
+    "\u03BB = \u03A3(\u03C8\u1D62 \u00B7 cos(\u03B8 + \u03C0n)) / \u221A(2n+1)",
+    "MAPPING LIMBIC RESONANCE VECTORS...",
+    "\u222B\u2080^\u221E e^(-\u03B1t) \u00B7 sin(\u03C9t + \u03C6) dt = \u03C9/(\u03B1\u00B2+\u03C9\u00B2)",
+    "CROSS-REFERENCING JUNGIAN ARCHETYPES...",
+    "P(crush|answers) = \u03A0(P(a\u1D62|crush)\u00B7P(crush))/P(a)",
+    "DECRYPTING ATTACHMENT STYLE MATRIX...",
+    "H(X) = -\u03A3 p(x\u1D62) \u00B7 log\u2082(p(x\u1D62))",
+    "CALIBRATING DOPAMINE PREDICTION MODEL...",
+    "\u2207\u00B2\u03C8 + (2m/\u210F\u00B2)(E-V)\u03C8 = 0",
+    "SCANNING SUBSTACK AUTHOR DATABASE [n=847,203]...",
+    "d/dt(\u2202L/\u2202q\u0307) - \u2202L/\u2202q = 0",
+    "COMPUTING EMOTIONAL EIGENVECTORS...",
+    "R(soul) = lim(n\u2192\u221E) \u03A3(heart\u1D62 \u00B7 mind\u1D62)/n",
+    "RUNNING COMPATIBILITY TENSOR ANALYSIS...",
+    "det|H - ES| = 0  \u2192  eigenvalues converging...",
+    "APPLYING FOURIER TRANSFORM TO VIBE SPACE...",
+    "F(\u03C9) = \u222B f(t)\u00B7e^(-i\u03C9t) dt  [t \u2208 feelings]",
+    "RESOLVING QUANTUM ENTANGLEMENT PAIRS...",
+    "\u27E8\u03C8_you|\u0124_crush|\u03C8_them\u27E9 = \u03B5\u2080 + \u03B4",
+    "MATCH CONFIDENCE: \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591\u2591 83.7%...",
+    "MATCH CONFIDENCE: \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2591 94.2%...",
+    "MATCH CONFIDENCE: \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588 99.97%",
+    "\u2593\u2593\u2593 CANDIDATE LOCKED \u2593\u2593\u2593"
+  ];
+
+  var statuses = [
+    "Initializing neural resonance field...",
+    "Parsing metaphysical fingerprint...",
+    "Cross-referencing 847,203 Substack authors...",
+    "Running attachment style regression...",
+    "Applying Bayesian crush inference...",
+    "Resolving quantum entanglement pairs...",
+    "Converging on soulmate eigenvalue...",
+    "Match found. Confidence: 99.97%"
+  ];
+
+  var lineIdx = 0;
+  var totalTime = 6500;
+  var lineInterval = totalTime / fakeLines.length;
+
+  var lineTimer = setInterval(function(){
+    if (lineIdx >= fakeLines.length) { clearInterval(lineTimer); return; }
+    rain.textContent += (lineIdx > 0 ? '\n' : '') + '> ' + fakeLines[lineIdx];
+    rain.scrollTop = rain.scrollHeight;
+    lineIdx++;
+    bar.style.width = Math.min((lineIdx/fakeLines.length)*100, 100) + '%';
+    var si = Math.min(Math.floor(lineIdx/(fakeLines.length/statuses.length)), statuses.length-1);
+    status.textContent = statuses[si];
+  }, lineInterval);
+
+  setTimeout(function(){ showReveal(); }, totalTime + 800);
+}
+
+function showReveal() {
+  showScreen('reveal');
+  updateProgress(5);
+  spawnConfetti();
+}
+
+function spawnConfetti() {
+  var colors = ['#ff6b35','#ff3366','#ffd700','#00e5ff','#b388ff','#ff8a80'];
+  for (var i = 0; i < 80; i++) {
+    var el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.left = Math.random()*100+'vw';
+    el.style.top = '-10px';
+    el.style.background = colors[Math.floor(Math.random()*colors.length)];
+    el.style.animationDuration = (2+Math.random()*3)+'s';
+    el.style.animationDelay = Math.random()*1.5+'s';
+    var s = 5+Math.random()*8;
+    el.style.width = s+'px';
+    el.style.height = s+'px';
+    el.style.borderRadius = Math.random()>.5 ? '50%' : '2px';
+    document.body.appendChild(el);
+    setTimeout(function(e){return function(){e.remove()}}(el), 6000);
+  }
+}
+
+document.getElementById('shareBtn').addEventListener('click', function(e) {
+  e.preventDefault();
+  var text = "my Substack crush is Paul Staples and honestly the algorithm is never wrong\n\nfind out yours \uD83D\uDC49";
+  var url = window.location.href;
+  if (navigator.share) {
+    navigator.share({title:'Substack Crush Revealer', text:text, url:url});
+  } else {
+    window.open('https://substack.com/home', '_blank');
+    navigator.clipboard.writeText(text+'\n'+url).then(function(){
+      var btn = document.getElementById('shareBtn');
+      var orig = btn.innerHTML;
+      btn.innerHTML = '\u2713 Copied to clipboard!';
+      setTimeout(function(){btn.innerHTML = orig}, 2000);
+    });
+  }
+});
+
+function resetQuiz() {
+  questionIndex = 0;
+  updateProgress(0);
+  showScreen('home');
+}
+
+initPhotos();
+</script>
+</body>
+</html>
